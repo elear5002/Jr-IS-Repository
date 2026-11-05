@@ -1,0 +1,806 @@
+# This is a sample Python script.
+from datetime import datetime
+import sqlite3
+import pandas as pd
+import numpy
+
+
+from tkinter import *
+
+next_available_patient = 1
+conn = sqlite3.connect('jr iss.db')
+user_name = ""
+password = ""
+next_available_m_attack = 1
+current_user_id = 0
+next_available_period = 1
+current_user_gender = 1
+# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+cur = conn.cursor()
+
+
+
+isLoggedIn = False
+
+def handleChoice(choice):
+    if choice == 1:
+        signup()
+    elif choice == 2:
+        login()
+    #elif choice == 3:
+
+
+
+def masterseemattacks():
+    cur.execute('''
+    select * from m_attack
+    ''')
+
+
+
+
+def seepatients():
+    cur.execute('''
+    select p.username, p.password, p.patient_id, p.age, p.dob, g.gender_name from patient p
+    join patient_gender pg on p.patient_id = pg.patient_id
+    join gender g on pg.gender_id = g.gender_id
+    
+    
+    ''')
+
+
+
+    ro =cur.fetchall()
+    for r in ro:
+        print(r)
+
+
+
+
+#seepatients()
+
+
+
+
+
+
+
+def logPeriod():
+    print("Enter start date of period as a string in the following format")
+    print("Ex: 2026-10-19")
+    start_date = input("")
+    print("Enter end date of period as a string in the following format (put N if the attack is ongoing")
+    print("Ex: 2026-10-19")
+    end_date = input("")
+
+    print("Enter the number corresponding to each of your symptoms as a string separated by comma")
+    print("Ex: 1,2,3,4,5,6,7,8,9")
+
+    for i in range(len(p_symp)):
+        print(i, p_symp[i])
+
+    symptoms = input("")
+
+    for i in range(len(symptoms.split(","))):
+        cur.execute('''
+            insert into p_attack_symptom values (?, ?)
+
+            ''', (next_available_period, symptoms[i]))
+
+
+def logSleep():
+    print("Enter start date of sleep as a string in the following format")
+    print("Ex: 2026-10-19")
+    start_date = input("")
+    print("Enter start date of sleep as a string in the following format")
+    print("Ex: 2026-10-19")
+    start_date = input("")
+
+
+
+
+
+def seeReportsPage():
+    print("Reports:")
+    query = "select * from m_attack where patient_id = ?"
+    cur.execute(query, current_user_id)
+
+
+
+
+
+"""
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+AUTH FUNCS
+"""
+
+def initMenu():
+    print("Enter number that corresponds to your choice:")
+    print("1. Sign up")
+    print("2. Log in")
+
+    choice = int(input("Enter your choice: "))
+    if choice == 1:
+        signup()
+    elif choice == 2:
+        login()
+
+
+def logInMenuFemale():
+    print("Enter number that corresponds to your choice:")
+    print("1. Log new migraine attack")
+    print("2. Log sleep")
+    print("3. Log period")
+    print("4. See reports")
+    choice = int(input("Enter your choice: "))
+    if choice == 1:
+        logMigraineAttack()
+    if choice == 2:
+        logSleep()
+    if choice == 3:
+        logPeriod()
+    if choice == 4:
+        seeReportsPage()
+
+
+def logInMenuMale():
+    print("Enter number that corresponds to your choice:")
+    print("1. Log new migraine attack")
+    print("2. Log sleep")
+    print("3. See reports")
+    choice = int(input(""))
+    if choice == 1:
+        logMigraineAttack()
+    if choice == 2:
+        logSleep()
+    if choice == 3:
+        seeReportsPage()
+
+
+def login():
+    username = input("Enter your username: ")
+
+    cur.execute("SELECT username, password, patient_id FROM patient")
+
+    global current_user_id
+    global current_user_gender
+
+    password = input("Enter your password: ")
+    upass = cur.fetchall()
+    for i in range(len(upass)):
+        if upass[i][0] == username:
+            if upass[i][1] == password:
+                print("Login successful")
+                current_user_id = int(upass[i][2])
+                break
+            elif (upass[i][1] != password):
+                print("username and password do not match")
+                print("Try again")
+
+                login()
+                break
+        elif upass[i][0] != username and i == len(upass) - 1:
+            print("Login unsuccessful")
+            print("Try again")
+
+            login()
+            break
+    cur.execute('''
+    select gender_id, patient_id from patient_gender where patient_id = ?
+    ''', (int(current_user_id),))
+    pg = cur.fetchall()
+
+    current_user_gender = int(pg[0][0])
+
+
+def signup():
+    global next_available_patient
+    username = input("Enter your username: ")
+    password = input("Enter your password: ")
+    age = input("Enter your age: ")
+    dob = input("Enter your date of birth: ")
+    cur.execute(''' insert into patient (username, password, patient_id, age, dob) values (?, ?, ?, ?, ?)
+    ''', (username, password, next_available_patient, age, dob))
+
+    conn.commit()
+    cur.execute('''
+    select * from gender
+    ''')
+
+    genertable = cur.fetchall()
+    for i in range(len(genertable)):
+        print(genertable[i][0], genertable[i][1])
+    gen_id = int(input("Enter the number that corresponds to your gender: "))
+    cur.execute('''
+    insert into patient_gender (patient_id, gen_id) values (?, ?)
+
+    ''', (next_available_patient, gen_id))
+    conn.commit()
+
+    modify_goals()
+
+    next_available_patient += 1
+    query = "update next_available set next_available_patient_id = ?"
+    cur.execute(query, next_available_patient)
+
+
+def modify_goals():
+    cur.extecute('''
+    delete from patient_goal
+    where patient_id = ?
+
+    ''', (current_user_id))
+    print("What are your goals?")
+    cur.execute('''
+
+    select * from goals
+
+    ''')
+
+    go = cur.fetchall()
+
+    for g in go:
+        print(g[0], g[1])
+    print("Enter the number corresponding to each of your goals in the following format:")
+    print("1,2,3,4,6")
+    pgs = input("")
+
+    toinput = pgs.split(",")
+    for i in toinput:
+        cur.execute('''
+
+        insert or ignore into patient_goal values (?,?)
+        ''', (current_user_id, i))
+
+
+
+"""
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+MIGRAINE FUNCS
+"""
+
+
+def logMigraineAttack():
+    global next_available_m_attack
+    cur.execute('''
+    select next_available_m_attack_id from next_available 
+
+    ''')
+    next_available_m_attack = cur.fetchone()[0]
+
+    print("Enter start date of attack as a string in the following format")
+    print("Ex: 2026-10-19")
+    start_date = input("")
+    print("Enter the end date as a string in the following format (put N if the attack is ongoing")
+    print("Ex: 2026-10-19")
+    end_date = input("")
+    print("Enter start time of attack as a string in the following format (use the 24 hour clock)")
+    print("Ex: 14:56")
+    start_time = input("")
+    print("Enter end time of attack as a string in the following format (use the 24 hour clock). Put N if ongoing")
+    print("Ex: 14:56")
+    end_time = input("")
+
+    print("Enter the number corresponding to each of your symptoms as a string separated by comma")
+    print("Ex: 1,2,3,4,5,6,7,8,9")
+
+    for i in range(len(msymp)):
+        print(i, msymp[i])
+
+    symptoms = input("")
+
+    for i in range(len(symptoms.split(","))):
+        cur.execute('''
+        insert or ignore into m_attack_symptom values (?, ?)
+
+        ''', (next_available_m_attack, symptoms[i]))
+    cur.execute('''
+    insert or ignore into m_attack values (?, ?, ?, ?, ?, ?)
+
+
+    ''', (next_available_m_attack, current_user_id, start_date, end_date, start_time, end_time))
+
+
+def analyzeMigraine():
+    findAvgMigStTime()
+
+
+def findAvgMigStTime():
+    cur.execute('''
+        select start_time from m_attack where patient_id = ?
+
+        ''', (current_user_id))
+
+    sts = cur.fetchall()
+    average = numpy.mean(sts)
+
+    haves = []
+    have_nots = []
+
+    for i in range(len(sts)):
+        d = sts[i][0] - average
+        if (d < 2):
+            haves.append(d)
+        else:
+            have_nots.append(d)
+    if (len(haves) > len(have_nots)):
+        print("Your migraine attacks tend to start around ", numpy.round(average))
+
+
+def findAvgMigEndTime():
+    cur.execute('''
+        select end_time from m_attack where patient_id = ?
+
+        ''', (current_user_id))
+
+    sts = cur.fetchall()
+    average = numpy.mean(sts)
+
+    haves = []
+    have_nots = []
+
+    for i in range(len(sts)):
+        d = sts[i][0] - average
+        if (d < 2):
+            haves.append(d)
+        else:
+            have_nots.append(d)
+    if (len(haves) > len(have_nots)):
+        print("Your migraine attacks tend to end around ", numpy.round(average))
+
+
+def findNormalSyptoms():
+    cur.execute('''
+    select migraine_attack_id, symptom_name from m_attack_symptom join m_symptom where patient_id = ?
+    ''', (current_user_id))
+
+    allsymptoms = cur.fetchall()
+    uniquemids = []
+    uniquesymptoms = []
+    normalsymptoms = []
+    for i in range(len(allsymptoms)):
+        if (allsymptoms[i][1] not in uniquesymptoms):
+            uniquesymptoms.append(allsymptoms[i][1])
+    symptomsbasedonmid = []
+    for i in range(len(allsymptoms)):
+        if allsymptoms[i][0] not in uniquemids:
+            uniquemids.append(allsymptoms[i][0])
+    for un in uniquemids:
+        s = []
+        for al in allsymptoms:
+            if al[0] == un:
+                s.append(al[1])
+        symptomsbasedonmid.append(s)
+    for sy in uniquesymptoms:
+        haves = 0
+        have_nots = 0
+
+        for sym in symptomsbasedonmid:
+            for sympt in sym:
+                if sy == sympt:
+                    haves += 1
+                else:
+                    have_nots += 1
+        if (haves > have_nots):
+            normalsymptoms.append(sym)
+
+
+def showAllAttackDates():
+    cur.execute('''
+    select start_date, end_date from m_attack where patient_id = ?
+
+
+
+    ''', (current_user_id))
+
+    dates = cur.fetchall()
+    for date in dates:
+        print("Migraine attack start date: " + date[0])
+        print("Migraine attack end date: " + date[1])
+        print("--------------------------------------")
+
+
+def showAttackDatesAndTimes():
+    cur.execute('''
+        select start_date, end_date, start_time, end_time from m_attack where patient_id = ?
+
+
+
+        ''', (current_user_id))
+
+    dates = cur.fetchall()
+    for date in dates:
+        print("Migraine attack start date: " + date[0])
+        print("Migraine attack end date: " + date[1])
+        print("Migraine attack start time: " + date[2])
+        print("Migraine attack start time: " + date[3])
+
+        print("--------------------------------------")
+
+
+def seeAllData():
+    cur.execute('''
+        select * from m_attack where patient_id = ?
+
+
+
+        ''', (current_user_id))
+
+    data = cur.fetchall()
+
+    for datum in data:
+        print("Migraine attack start date: " + datum[0])
+        print("Migraine attack end date: " + datum[1])
+        print("Migraine attack start time: " + datum[2])
+        print("Migraine attack start time: " + datum[3])
+
+        print("--------------------------------------")
+
+    cur.execute('''
+            select m.start_date, m.end_date, ms.symptom_name
+            join m_attack_symptom mas on m.migraine_attack_id = mas.migraine_attack_id
+            join m_symptom ms on mas.m_symptom_id = ms.symptom_id
+            where patient_id = ?
+
+            ''', (current_user_id))
+
+    data = cur.fetchall()
+    stdates = []
+    enddates = []
+    datesandsymptoms = []
+    for datum in data:
+        datesandsymptoms.append([datum[0], datum[1]])
+    for das in datesandsymptoms:
+        for datum in data:
+            if datum[0] == das[0] and datum[1] == das[1]:
+                das.append(datum[2])
+
+    for das in datesandsymptoms:
+        symptomstring = ("")
+        for i in range(2, len(das) - 1, 1):
+            symptomstring += das[i] + ", "
+        symptomstring += das[len(das) - 1]
+
+        print("Migraine attack start date: " + das[0])
+        print("Migraine attack end date: " + das[1])
+        print("Symptoms: " + symptomstring)
+
+
+def analyzeMigsAndPeriods():
+    cur.execute('''
+    select * from period
+    where patient_id = ?
+
+    ''', (current_user_id))
+
+    pmaster = cur.fetchall()
+
+    psds = []
+    peds = []
+    pids = []
+    for row in pmaster:
+        psds.append(row[2])
+        peds.append(row[3])
+        pids.append(row[1])
+    cur.execute('''
+    select * from m_attack
+    where patient_id = ?
+
+    ''', (current_user_id))
+
+    msds = []
+    meds = []
+    mids = []
+
+    mmaster = cur.fetchall()
+    for mm in mmaster:
+        msds.append(mm[2])
+        meds.append(mm[3])
+        mids.append(mm[0])
+    haves = 0
+    have_nots = 0
+
+    for psd in psds:
+        cur.execute('''
+        select date_sub(?, interval 7 day), date_add(?, interval 7 day)
+
+        ''', (psd, psd))
+    intervdates = cur.fetchall()
+
+    for mig in msds:
+        isAMigraine = False
+        for date in intervdates:
+            if intervdates[0] <= mig <= intervdates[1]:
+                isAMigraine = True
+                haves += 1
+                break
+        if not isAMigraine:
+            have_nots += 1
+
+
+"""
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+SETUP FUNCS
+"""
+
+msymp = ["Constipation", "Mood changes", "Food cravings", "Neck stiffness", "Frequent urination", "Frequent yawning",
+         "Visual changes", "Vision loss", "Pins & Needles Feeling", "Weakness/Numbness", "Trouble Speaking",
+         "Pain in head or neck", "Nausea", "Vomiting", "Sensitivity to light", "Sensitivity to sound",
+         "Sensitivity to smell", "fatigue", "brain fog"]
+p_symp = ["tension", "anxiety", "depressed mood", "crying spells", "mood swings", "irritability",
+          "appetite changes", "trouble sleeping", "social withdrawal", "difficulty concentrating",
+          "joint/muscle pain", "headache", "fatigue", "weight gain", "bloating", "breast tenderness", "acne",
+          "constipation", "diarrhea"]
+
+
+def createTables():
+    cur.execute('''
+        create table if not exists patient (
+            username text not null unique,
+            password text not null,
+            patient_id integer not null primary key,
+            age integer not null,
+            dob date not null,
+        
+        )
+    ''')
+    conn.commit()
+
+    cur.execute('''
+            create table if not exists m_attack (
+                migraine_attack_id integer primary key not null,
+                patient_id integer not null,
+                start_date date not null,
+                end_date date,
+                start_time time not null,
+                end_time time not null
+
+            )
+        ''')
+    conn.commit()
+
+    cur.execute('''
+                create table if not exists m_symptom (
+                    m_symptom_id integer primary key not null,
+                    symptom_name text not null
+
+                )
+            ''')
+    conn.commit()
+
+    cur.execute('''
+                create table if not exists gender ( 
+                    gender_id integer primary key not null,
+                    gender_name text not null
+                )
+                ''')
+    conn.commit()
+
+    cur.execute('''
+                    create table if not exists gender ( 
+                        gender_id integer primary key not null,
+                        gender_name text not null
+                    )
+                    ''')
+    conn.commit()
+    gender_query = "insert or ignore into gender (gender_id, gender_name) values (?, ?)"
+    genders = [(1, "Male"), (2, "Female"), (3, "Non-binary"), (4, "Prefer not to say")]
+    conn.executemany(gender_query, genders)
+    conn.commit()
+    cur.execute('''
+                    create table if not exists m_attack_symptom ( 
+                        migraine_attack_id int primary key not null,
+                        m_symptom_id integer not null
+
+                    )
+                    ''')
+    conn.commit()
+
+    cur.execute('''
+                    create table if not exists m_pain_scale ( 
+                        m_pain_level integer not null
+                    )
+                ''')
+    conn.commit()
+
+    pain_query = "insert or ignore into m_pain_scale (m_pain_level) values (?)"
+    for i in range(11):
+        conn.execute(pain_query, [i])
+    conn.commit()
+
+    m_pain_types = ["throbbing", "pulsating", "punding", "constant", "other"]
+
+    cur.execute('''
+                    create table if not exists m_pain_type ( 
+                        m_pain_type_id integer not null primary key,
+                        m_pain_type_name text not null
+                    )
+
+                ''')
+
+    for i in range(len(m_pain_types)):
+        conn.execute('''
+        insert or ignore into m_pain_type (m_pain_type_id, m_pain_type_name) 
+        values (?, ?)
+
+        ''', (i + 1, m_pain_types[i]))
+    conn.commit()
+
+    conn.commit()
+
+    cur.execute('''
+    create table if not exists m_attack_pain_type (
+
+    m_pain_type_id integer not null,
+    migraine_attack_id integer not null
+
+    )
+
+    ''')
+
+    cur.execute('''
+    create table if not exists patient_gender ( 
+    patient_id integer not null,
+    gender_id integer not null,
+    unique (patient_id)
+    )
+    ''')
+    conn.commit()
+
+    m_symptom_quer = "insert or ignore into m_symptom (symptom_id, symptom_name) values (?, ?)"
+
+    for i in range(len(msymp)):
+        conn.execute(m_symptom_quer, (i + 1, msymp[i]))
+
+    conn.commit()
+
+    cur.execute('''
+        create table if not exists p_symptoms (
+        p_symptom_id integer not null primary key,
+        p_symptom_name text not null
+        )
+        ''')
+    conn.commit()
+
+    cur.execute('''
+        create table if not exists period (
+        period_id integer not null primary key,
+        patient_id integer not null,
+        start_date date not null,
+        end_date date not null   
+            )
+        ''')
+    conn.commit()
+
+    cur.execute('''
+        create table if not exists p_attack_symptom (
+        p_symptom_id integer not null,
+        period_id integer not null
+        )
+        ''')
+    conn.commit()
+
+    for i in range(len(p_symp)):
+        conn.execute('''
+            insert or ignore into p_symptoms (p_symptom_id, p_symptom_name) values (?, ?)
+
+
+            ''', (i + 1, p_symp[i]))
+    conn.commit()
+
+    cur.execute('''
+        create table if not exists sleep (
+        sleep_id integer not null primary key,
+        patient_id integer not null,
+        start_date date not null
+
+
+
+        )
+        ''')
+    conn.commit()
+    cur.execute('''
+    create table if not exists sleep_cycle (
+    sleep_cycle_id integer not null primary key,
+    sleep_id integer not null,
+    start_time time not null,
+    end_time time not null
+    )
+
+    ''')
+
+    cur.execute('''
+    create table if not exists next_availables (
+    next_available_patient_id integer not null,
+    next_available_m_attack_id integer not null,
+    next_available_period integer not null,
+    next_available_sleep_id integer not null,
+    next_available_sleep_cycle_id integer not null
+    )
+
+    ''')
+
+    cur.execute('''
+    create table if not exists goals (
+    goal_id integer not null primary key,
+    goal_name text not null
+    )
+
+    ''')
+
+    goals = ["track my migraines", "track my sleep", "look for patterns in relation to migraine and sleep",
+             "look for patterns in relation to migraine and period",
+             "look for patterns in relation to period and sleep", "track my period"]
+
+    for i in range(len(goals)):
+        conn.execute('''
+        insert or ignore into goals (goal_id, goal_name) values (?,?)
+
+        ''', (i + i, goals[i]))
+
+    cur.execute('''
+    create table if not exists patient_goal (
+    patient_id integer not null,
+    goal_id integer not null
+    )
+
+    ''')
+
+
+samplepatientname = ["Alice", "Bob", "Carrie", "Daniel", "Evan", "Sam"]
+sampleusername = ["secondhand_insane", "wickedly_wicked", "calypso124", "mammas_mia", "everybodys_foolish_one",
+                  "d0r0thea"]
+samplepatientage = ["A", "B", "C", "D", "E", "F"]
+sampleages = [53, 76, 67, 18, 29, 17]
+samppasswords = ["St3qZcqf4r", "6zGKUSxyvb", "mC3TNKWmAm", "UBGsJDAqJJ", "mAAdJZwGKL", "sBdPNh45XT"]
+dobsample = ["1-22", "04-18", "04-21", "05-12", "06-14", "06-26", "08-22", "09-19", "02-22", "07-15"]
+gendersamp = [2, 1, 2, 4, 2, 3]
+
+
+def entersampledata():
+    for i in range(6):
+        year = 2026 - sampleages[i]
+        doby = str(year)
+        dob = doby + "-" + dobsample[i]
+        cur.execute('''
+        insert or ignore into patient (username, password, patient_id, age, dob)
+        values (?, ?, ?, ?, ?)
+
+        ''', (sampleusername[i], samppasswords[i], i + 1, sampleages[i], dob))
+        conn.commit()
+
+        cur.execute('''
+        insert or ignore into patient_gender (patient_id, gender_id) values (?, ?)
+        ''', (i + 1, gendersamp[i]))
+        conn.commit()
+
+    conn.commit()
+
+
+def deleteduplicates():
+    cur.execute(''' delete from patient ''')
+    cur.execute('''
+    delete from patient_gender''')
+    conn.commit()
+
+deleteduplicates()
+entersampledata()
+
+
+login()
+
