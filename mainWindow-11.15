@@ -1,0 +1,298 @@
+from main import cur, conn
+import tkinter as tk
+from tkinter import *
+from loginpagepy import *
+mainWindow = Tk()
+mainWindow.geometry("600x600")
+mainWindow.title("Auth Page")
+username = ""
+password = ""
+
+def homemenu():
+    homemenuview = tk.Tk()
+    homemenuview.geometry("600x600")
+    homemenuview.title("Login Page")
+    homemenuview.config(background='blue')
+    titlehome = tk.Label(homemenuview, text="What would you like to do?", font=("Arial", 30))
+    titlehome.pack()
+
+
+mainWindow.config(background = "white")
+mainPageT = tk.Label(mainWindow, text="Welcome!", font=('Arial', 18))
+mainPageT.pack(padx = 20, pady=100)
+
+
+buttonframe = tk.Frame(mainWindow)
+buttonframe.columnconfigure(0,weight=1)
+buttonframe.columnconfigure(1,weight=1)
+buttonframe.columnconfigure(0,weight=1)
+
+def getlogin(usernameBox, passBox):
+    global username
+    global password
+    username = usernameBox.get()
+    password = passBox.get()
+    print("Logged in")
+
+
+    cur.execute("SELECT username, password, patient_id FROM patient")
+
+    global current_user_id
+    global current_user_gender
+
+
+
+
+
+    upass = cur.fetchall()
+    for i in range(len(upass)):
+        if upass[i][0] == username:
+            if upass[i][1] == password:
+                print("Login successful")
+                current_user_id = int(upass[i][2])
+                break
+            elif (upass[i][1] != password):
+                print("username and password do not match")
+                print("Try again")
+
+                login()
+                break
+        elif upass[i][0] != username and i == len(upass) - 1:
+            print("Login unsuccessful")
+            print("Try again")
+
+            login()
+            break
+
+    cur.execute('''
+    select gender_id, patient_id from patient_gender where patient_id = ?
+    ''', (int(current_user_id),))
+    pg = cur.fetchall()
+
+    current_user_gender = int(pg[0][0])
+    homemenu()
+
+
+
+def login():
+    isCorrect = True
+    lgwindow = tk.Tk()
+    lgwindow.geometry("600x600")
+    lgwindow.title("Login Page")
+    lgwindow.config(background='green')
+    userLabel = tk.Label(lgwindow, text="Welcome back!", font=("Arial", 30))
+    userLabel.pack()
+    userLabel = tk.Label(lgwindow, text="Username:", font=("Arial",30))
+    userLabel.pack(pady=20)
+
+    usernameBox = Entry(lgwindow, font=("Arial", 28))
+    usernameBox.pack(pady=10)
+    userLabel = tk.Label(lgwindow, text="Password:", font=("Arial", 30))
+    userLabel.pack(pady=20)
+
+
+    passBox = Entry(lgwindow, font=("Arial", 28))
+    passBox.pack()
+
+    lgsubmitbtn = Button(lgwindow, text="sumbit", command=lambda: getlogin(usernameBox, passBox))
+
+    lgsubmitbtn.pack()
+
+    lgwindow.mainloop()
+
+    mainWindow.destroy()
+
+
+
+
+
+
+
+
+
+    #loginMenu()
+lgbtn = tk.Button(buttonframe, text="Log in", font=('Arial', 18), fg='#066b01', command=login)
+
+lgbtn.grid(row=3, column=0, sticky=tk.W+tk.E)
+def modify_goals():
+    cur.extecute('''
+    delete from patient_goal
+    where patient_id = ?
+
+    ''', (current_user_id))
+    print("What are your goals?")
+    cur.execute('''
+
+    select * from goals
+
+    ''')
+
+    go = cur.fetchall()
+
+    for g in go:
+        print(g[0], g[1])
+    print("Enter the number corresponding to each of your goals in the following format:")
+    print("1,2,3,4,6")
+    pgs = input("")
+
+    toinput = pgs.split(",")
+    for i in toinput:
+        cur.execute('''
+
+        insert or ignore into patient_goal values (?,?)
+        ''', (current_user_id, i))
+def getsu(usernameBox, passBox, agebox, dobox, genderbox):
+    username = usernameBox.get()
+    password = passBox.get()
+    age = agebox.get()
+    dob = dobox.get()
+    gender= genderbox.get()
+    cur.execute(''' insert into patient (username, password, patient_id, age, dob) values (?, ?, ?, ?, ?)
+        ''', (username, password, next_available_patient, age, dob))
+    conn.commit()
+    cur.execute(''' insert into patient_gender(patient_id, gen_id) values(?, ?)
+
+    ''', (next_available_patient, gender))
+    conn.commit()
+    next_available_patient += 1
+    query = "update next_available set next_available_patient_id = ?"
+    cur.execute(query, next_available_patient)
+
+    print("sing up succesful")
+    setGoals(genderbox.get(), next_available_patient)
+
+def signup():
+
+
+
+    global next_available_patient
+    cur.execute('''select * from patient''')
+    popopop = cur.fetchall()
+    next_available_patient = popopop[len(popopop) -1][2]
+
+    suwindow = tk.Tk()
+    suwindow.geometry("600x900")
+    suwindow.title("Login Page")
+    suwindow.config(background='blue')
+    userLabel = tk.Label(suwindow, text="Welcome!", font=("Arial", 30))
+    userLabel.pack()
+    userLabel = tk.Label(suwindow, text="Username:", font=("Arial", 30))
+    userLabel.pack(pady=5)
+
+    usernameBox = Entry(suwindow, font=("Arial", 28))
+    usernameBox.pack(pady=5)
+    userLabel = tk.Label(suwindow, text="Password:", font=("Arial", 30))
+    userLabel.pack(pady=5)
+
+    passBox = Entry(suwindow, font=("Arial", 28))
+    passBox.pack()
+
+    ageLabel = tk.Label(suwindow, text="Age:", font=("Arial", 30))
+    ageLabel.pack()
+    ageBox = Entry(suwindow, font=("Arial", 28))
+    ageBox.pack(pady=5)
+
+    DOBLABEL = tk.Label(suwindow, text="Date of Birth:", font=("Arial", 30))
+    DOBLABEL.pack(pady=5)
+    DOBox = Entry(suwindow, font=("Arial", 28))
+    DOBox.pack(pady=5)
+
+
+    genderlabel = tk.Label(suwindow, text="Type the number thay corresponds to your sex/gender: ", font=("Arial", 15))
+    genrelabel = tk.Label(suwindow, text="1 - male, 2 - female, 3 - non - binary, 4 -, prefer not to say", font=("Arial", 15))
+    genderlabel.pack(pady=5)
+    genrelabel.pack(pady=0)
+    genderbox = Entry(suwindow, font=("Arial", 28))
+    genderbox.pack(pady=5)
+
+
+
+
+
+
+    cur.execute("select * from goals")
+    goall = IntVar()
+
+
+    go = cur.fetchall()
+    for g in go:
+        print(g)
+
+
+
+
+
+
+
+
+
+    susubmitbtn = Button(suwindow, text="sumbit", command=lambda: getsu(usernameBox, passBox, ageBox, DOBox, genderbox))
+
+    susubmitbtn.pack()
+
+
+
+    mainWindow.destroy()
+
+    suwindow.mainloop()
+
+
+
+
+
+
+
+    modify_goals()
+
+
+
+
+
+subtn = tk.Button(buttonframe, text="Sign Up", font=('Arial', 18), fg='#0a0ef2', command=signup)
+subtn.grid(row=4, column=0, sticky=tk.W+tk.E)
+
+buttonframe.pack()
+
+mainWindow.mainloop()
+
+
+def setGoals(genid, pid):
+    goalpg = tk.TK()
+    goalpg.geometry("600x600")
+    goalpg.config(background='blue')
+    trackmymigraines= False
+    trackmysleep = False
+    trackpatternsmas = False
+    tk.Button(goalpg, text="track my migraines", font=('Arial', 18), command=
+              trackmymigraines.toggle())
+    tk.Button(goalpg, text="track my sleep", font=('Arial', 18), command=
+                trackmysleep.toggle())
+    tk.Button(goalpg, text="track my patterns related to migraine and sleep", font=('Arial', 18), command=
+                trackpatternsmas.toggle())
+    if (genid == 2):
+        tk.Button(goalpg, text="track my patterns related to migraine and period", font=('Arial', 18), command=
+        trackpatternsmas.toggle())
+
+        tk.Button(goalpg, text="track my patterns related to period and sleep", font=('Arial', 18), command=
+        trackmysleep.toggle())
+        tk.Button(goalpg, text="track my periods", font=('Arial', 18), command=
+        trackmymigraines.toggle())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
