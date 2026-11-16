@@ -1,0 +1,149 @@
+import tkinter as tk
+from main import conn,cur
+def toggleSymp(s):
+    if s[1]==True:
+        s[1] = False
+    else:
+        s[1] = True
+    print(s[0][1])
+    print(s[1])
+def logMGsymp(cmi):
+    mgsympmenu = tk.Tk()
+    mgsympmenu = 
+
+    cur.execute('select * from m_symptom')
+    cc = cur.fetchall()
+    for c in cc:
+        print(c)
+
+    msymp = ["Constipation", "Mood changes", "Food cravings", "Neck stiffness", "Frequent urination",
+             "Frequent yawning",
+             "Visual changes", "Vision loss", "Pins & Needles Feeling", "Weakness", "Numbness", "Trouble Speaking",
+             "Pain in head or neck", "Nausea", "Vomiting", "Sensitivity to light", "Sensitivity to sound",
+             "Sensitivity to smell", "fatigue", "brain fog"]
+    for i in range(int(len(msymp))):
+        cur.execute('insert or ignore into m_symptom values (?, ?)', ((i + 1), msymp[i]))
+        print("success")
+    cur.execute('select * from m_symptom')
+    cc = cur.fetchall()
+
+    symptomtracker = []
+    t = 0
+    for i in range(len(cc)):
+        symptomtracker.append([cc[i], False])
+
+    mgattacklog.columnconfigure(0, weight=1)
+    mgattacklog.columnconfigure(1, weight=1)
+    """
+    mgattacklog.columnconfigure(2, weight=1)
+    mgattacklog.columnconfigure(3, weight=1)
+    mgattacklog.rowconfigure(0, weight=1)
+    mgattacklog.rowconfigure(1, weight=1)
+    mgattacklog.rowconfigure(2, weight=1)
+    mgattacklog.rowconfigure(3, weight=1)
+    mgattacklog.rowconfigure(4, weight=1)
+    """
+    for i in range(10):
+        btn1 = tk.Button(mgattacklog, text=symptomtracker[i][0][1], font=("Arial", 7), command=
+        lambda i=i: toggleSymp(symptomtracker[i]))
+
+        btn1.grid(row=i, column=0, sticky="w", pady=10)
+    for i in range(10, 20, 1):
+        btn1 = tk.Button(mgattacklog, text=symptomtracker[i][0][1], font=("Arial", 7), command=
+        lambda i=i: toggleSymp(symptomtracker[i]))
+
+        btn1.grid(row=i - 10, column=1, sticky="e", pady=10)
+
+
+def submitMigAttack(symptomT, cmi):
+    for i in range(symptomT):
+        if (symptomT[i][1] == True):
+            query = 'insert or ignore into m_attack_symptom values (?, ?)'
+            vals = (symptomT[i][0][0], cmi)
+            cur.execute(query, vals)
+
+
+
+def logMigraineAttack():
+
+
+    mgattacklog = tk.Tk()
+    mgattacklog.geometry("600x600")
+
+    global next_available_m_attack
+    global current_user_id
+    cur.execute('''
+    select next_available_m_attack_id from next_availables
+
+    ''')
+    next_available_m_attack = cur.fetchone()
+    mgattacklog.config(bg="green")
+    ww = 50
+
+
+
+    tk.Label(mgattacklog, text="Enter the start date of the attack as a string in the format 2026-11-19", bg="green").pack(pady=10)
+    stdateentry = tk.Entry(mgattacklog, width=ww)
+    stdateentry.pack()
+
+    tk.Label(mgattacklog, text="Enter the end date of the attack as a string in the format 2026-11-19", bg="green").pack(pady=10)
+    enddateentry = tk.Entry(mgattacklog, width=ww)
+    enddateentry.pack()
+
+
+
+    tk.Label(mgattacklog, text="Enter the start time of the attack as a string in the format 2026-11-19", bg="green").pack(pady=10)
+    sttimeentry = tk.Entry(mgattacklog, width=ww)
+    sttimeentry.pack()
+
+    tk.Label(mgattacklog, text="Enter the end time of the attack as a string in the format 2026-11-19", bg="green").pack(pady=10)
+    endtimeentry = tk.Entry(mgattacklog, width=ww)
+    endtimeentry.pack()
+
+    tk.Label(mgattacklog, text="Enter your pain level (0 is no pain and 10 is the worst headache of your life)", bg="green").pack(pady=10)
+    endtimeentry = tk.Entry(mgattacklog, width=ww)
+    endtimeentry.pack()
+    cur.execute('delete from m_symptom')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    mgattacklog.mainloop()
+
+
+
+
+
+
+def mainMenu():
+    global current_user_id
+    mainMenuM = tk.Tk()
+    mainMenuM.geometry("600x600")
+    mainMenuM.configure(bg="green")
+    cur.execute('select * from m_attack')
+
+
+    tk.Label(mainMenuM, text="What would you like to do?", fg="white", bg="green", font=("Arial, 28")).pack()
+    tk.Button(mainMenuM, text="Log my migraine", fg="black", bg="green", font=("Arial, 28"), command=logMigraineAttack).pack()
+    tk.Button(mainMenuM, text="See my migraine and sleep patterns", fg="black", bg="green", font=("Arial, 28"), command=logMigraineAttack).pack()
+    tk.Button(mainMenuM, text="Log a night sleep", fg="black", bg="green", font=("Arial, 28"),command=logMigraineAttack).pack()
+    tk.Button(mainMenuM, text="Log a sleep cycle", fg="black", bg="green", font=("Arial, 28"),command=logMigraineAttack).pack()
+
+
+
+    mainMenuM.mainloop()
+
+
+mainMenu()
+
+
