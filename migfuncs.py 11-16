@@ -1,0 +1,334 @@
+
+
+from authfuncs import *
+from main import *
+from main import cur, conn
+from setup import *
+import numpy
+
+
+
+
+def logMigraineAttack():
+    global next_available_m_attack
+    cur.execute('''
+    select next_available_m_attack_id from next_available 
+
+    ''')
+    next_available_m_attack = cur.fetchone()[0]
+
+    print("Enter start date of attack as a string in the following format")
+    print("Ex: 2026-10-19")
+    start_date = input("")
+    print("Enter the end date as a string in the following format (put N if the attack is ongoing")
+    print("Ex: 2026-10-19")
+    end_date = input("")
+    print("Enter start time of attack as a string in the following format (use the 24 hour clock)")
+    print("Ex: 14:56")
+    start_time = input("")
+    print("Enter end time of attack as a string in the following format (use the 24 hour clock). Put N if ongoing")
+    print("Ex: 14:56")
+    end_time = input("")
+
+    print("Enter the number corresponding to each of your symptoms as a string separated by comma")
+    print("Ex: 1,2,3,4,5,6,7,8,9")
+
+    for i in range(len(msymp)):
+        print(i, msymp[i])
+
+    symptoms = input("")
+
+    for i in range(len(symptoms.split(","))):
+        cur.execute('''
+        insert or ignore into m_attack_symptom values (?, ?)
+
+        ''', (next_available_m_attack, symptoms[i]))
+    cur.execute('''
+    insert or ignore into m_attack values (?, ?, ?, ?, ?, ?)
+    
+    
+    ''', (next_available_m_attack, current_user_id, start_date, end_date, start_time, end_time))
+
+
+def analyzeMigraine():
+    findAvgMigStTime()
+
+
+def findAvgMigStTime():
+    cur.execute('''
+        select start_time from m_attack where patient_id = ?
+
+        ''', (current_user_id))
+
+    sts = cur.fetchall()
+    average = numpy.mean(sts)
+
+    haves = []
+    have_nots = []
+
+    for i in range(len(sts)):
+        d = sts[i][0] - average
+        if (d < 2):
+            haves.append(d)
+        else:
+            have_nots.append(d)
+    return numpy.round(average)
+
+
+
+
+
+
+def findAvgMigEndTime():
+    cur.execute('''
+        select end_time from m_attack where patient_id = ?
+
+        ''', (current_user_id))
+
+    sts = cur.fetchall()
+    average = numpy.mean(sts)
+
+    haves = []
+    have_nots = []
+
+    for i in range(len(sts)):
+        d = sts[i][0] - average
+        if (d < 2):
+            haves.append(d)
+        else:
+            have_nots.append(d)
+    return numpy.round(average)
+
+
+def findNormalSyptoms():
+
+
+    cur.execute('''
+    select migraine_attack_id, symptom_name from m_attack_symptom join m_symptom where patient_id = ?
+    ''', (current_user_id))
+
+    allsymptoms = cur.fetchall()
+    uniquemids = []
+    uniquesymptoms = []
+    normalsymptoms = []
+    for i in range(len(allsymptoms)):
+        if (allsymptoms[i][1] not in uniquesymptoms):
+            uniquesymptoms.append(allsymptoms[i][1])
+    symptomsbasedonmid = []
+    for i in range(len(allsymptoms)):
+        if allsymptoms[i][0] not in uniquemids:
+            uniquemids.append(allsymptoms[i][0])
+    for un in uniquemids:
+        s = []
+        for al in allsymptoms:
+            if al[0] == un:
+                s.append(al[1])
+        symptomsbasedonmid.append(s)
+    for sy in uniquesymptoms:
+        haves = 0
+        have_nots = 0
+
+        for sym in symptomsbasedonmid:
+            for sympt in sym:
+                if sy == sympt:
+                    haves += 1
+                else:
+                    have_nots += 1
+        if (haves > have_nots):
+            normalsymptoms.append(sym)
+
+def showAllAttackDates():
+    cur.execute('''
+    select start_date, end_date from m_attack where patient_id = ?
+    
+    
+    
+    ''', (current_user_id))
+
+    dates = cur.fetchall()
+    for date in dates:
+        print("Migraine attack start date: " + date[0])
+        print("Migraine attack end date: " + date[1])
+        print("--------------------------------------")
+
+def showAttackDatesAndTimes():
+    cur.execute('''
+        select start_date, end_date, start_time, end_time from m_attack where patient_id = ?
+
+
+
+        ''', (current_user_id))
+
+    dates = cur.fetchall()
+    for date in dates:
+        print("Migraine attack start date: " + date[0])
+        print("Migraine attack end date: " + date[1])
+        print("Migraine attack start time: " + date[2])
+        print("Migraine attack start time: " + date[3])
+
+        print("--------------------------------------")
+
+def seeAllData():
+    cur.execute('''
+        select * from m_attack where patient_id = ?
+
+
+
+        ''', (current_user_id))
+
+    data = cur.fetchall()
+
+    for datum in data:
+        print("Migraine attack start date: " + datum[0])
+        print("Migraine attack end date: " + datum[1])
+        print("Migraine attack start time: " + datum[2])
+        print("Migraine attack start time: " + datum[3])
+
+        print("--------------------------------------")
+
+    cur.execute('''
+            select m.start_date, m.end_date, ms.symptom_name
+            join m_attack_symptom mas on m.migraine_attack_id = mas.migraine_attack_id
+            join m_symptom ms on mas.m_symptom_id = ms.symptom_id
+            where patient_id = ?
+
+            ''', (current_user_id))
+
+    data = cur.fetchall()
+    stdates = []
+    enddates = []
+    datesandsymptoms = []
+    for datum in data:
+
+        datesandsymptoms.append([datum[0], datum[1]])
+    for das in datesandsymptoms:
+        for datum in data:
+            if datum[0] == das[0] and datum[1] == das[1]:
+                das.append(datum[2])
+
+
+    for das in datesandsymptoms:
+        symptomstring = ("")
+        for i in range(2, len(das) -1, 1):
+            symptomstring += das[i] + ", "
+        symptomstring += das[len(das) -1]
+
+        print("Migraine attack start date: " + das[0])
+        print("Migraine attack end date: " + das[1])
+        print("Symptoms: " + symptomstring)
+
+
+
+
+def analyzeMigsAndPeriods():
+
+    cur.execute('''
+    select * from period
+    where patient_id = ?
+    
+    ''', (current_user_id))
+
+    pmaster = cur.fetchall()
+
+    psds = []
+    peds = []
+    pids = []
+    for row in pmaster:
+        psds.append(row[2])
+        peds.append(row[3])
+        pids.append(row[1])
+    cur.execute('''
+    select * from m_attack
+    where patient_id = ?
+
+    ''', (current_user_id))
+
+    msds = []
+    meds = []
+    mids = []
+
+    mmaster = cur.fetchall()
+    for mm in mmaster:
+        msds.append(mm[2])
+        meds.append(mm[3])
+        mids.append(mm[0])
+    haves = 0
+    have_nots = 0
+
+
+
+    for psd in psds:
+        cur.execute('''
+        select date_sub(?, interval 7 day), date_add(?, interval 7 day)
+
+        ''', (psd, psd))
+    intervdates = cur.fetchall()
+
+    for mig in msds:
+        isAMigraine = False
+        for date in intervdates:
+            if intervdates[0] <= mig <= intervdates[1]:
+                isAMigraine = True
+                haves+= 1
+                break
+        if not isAMigraine:
+
+            have_nots += 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
