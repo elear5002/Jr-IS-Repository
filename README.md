@@ -22,4 +22,6 @@
 
 
 
-Main.py enters 
+Main.py creates all the tables & enters all profile sample data
+to run the program, run createTables() and entersampledata() from main.py
+
