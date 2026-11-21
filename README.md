@@ -19,3 +19,7 @@
 
 | [Ability to share with healthcare providers (STRETCH)]
 (https://github.com/lady-igth/Junior-IS/issues/10)
+
+
+
+Main.py enters 
