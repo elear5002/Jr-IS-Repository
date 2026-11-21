@@ -24,4 +24,6 @@
 
 Main.py creates all the tables & enters all profile sample data
 to run the program, run createTables() and entersampledata() from main.py
-
+downlaod mainMenu() & mainWindow()
+run mainWindow()
+a blue sceen and a white screen will come up. Ignore the blue screen & just focus on the bluw screen
